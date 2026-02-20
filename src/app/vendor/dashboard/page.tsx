@@ -298,7 +298,7 @@ export default function VendorDashboard() {
                     value={newProduct.description}
                     onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg"
-                    rows="3"
+                    rows={3}
                   />
                   <button
                     type="submit"
