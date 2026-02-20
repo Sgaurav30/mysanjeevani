@@ -41,14 +41,14 @@ export default function AdminVendors() {
       if (!response.ok) throw new Error('Failed to fetch vendors');
       const data = await response.json();
       setVendors(data.vendors || []);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Error:', err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (vendorId) => {
+  const handleApprove = async (vendorId: string) => {
     try {
       const response = await fetch('/api/admin/vendors', {
         method: 'POST',
@@ -63,12 +63,13 @@ export default function AdminVendors() {
       setMessage('✅ Vendor approved successfully');
       fetchVendors();
       setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setMessage('❌ ' + err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err.message : 'Unknown error';
+      setMessage('❌ ' + error);
     }
   };
 
-  const handleReject = async (vendorId) => {
+  const handleReject = async (vendorId: string) => {
     if (!rejectionReason.trim()) {
       setMessage('⚠️ Please provide rejection reason');
       return;
@@ -91,12 +92,13 @@ export default function AdminVendors() {
       setRejectionReason('');
       fetchVendors();
       setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setMessage('❌ ' + err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err.message : 'Unknown error';
+      setMessage('❌ ' + error);
     }
   };
 
-  const handleSuspend = async (vendorId) => {
+  const handleSuspend = async (vendorId: string) => {
     try {
       const response = await fetch('/api/admin/vendors', {
         method: 'PUT',
@@ -111,8 +113,9 @@ export default function AdminVendors() {
       setMessage('✅ Vendor suspended');
       fetchVendors();
       setTimeout(() => setMessage(''), 3000);
-    } catch (err) {
-      setMessage('❌ ' + err.message);
+    } catch (err: unknown) {
+      const error = err instanceof Error ? err.message : 'Unknown error';
+      setMessage('❌ ' + error);
     }
   };
 
@@ -236,9 +239,13 @@ export default function AdminVendors() {
                             }).then(() => {
                               setMessage('✅ Vendor reactivated');
                               fetchVendors();
+                            }).catch((err: unknown) => {
+                              const error = err instanceof Error ? err.message : 'Unknown error';
+                              setMessage('❌ ' + error);
                             });
-                          } catch (err) {
-                            setMessage('❌ Error');
+                          } catch (err: unknown) {
+                            const error = err instanceof Error ? err.message : 'Unknown error';
+                            setMessage('❌ ' + error);
                           }
                         }}
                         className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-semibold"
