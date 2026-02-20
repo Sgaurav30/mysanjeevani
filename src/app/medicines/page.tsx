@@ -25,6 +25,7 @@ interface Vendor {
   name: string;
   email: string;
   rating?: number;
+  vendorName?: string;
 }
 
 export default function MedicinesPage() {
@@ -307,14 +308,14 @@ export default function MedicinesPage() {
                       {vendors.map((vendor) => (
                         <button
                           key={vendor._id}
-                          onClick={() => setSelectedVendor(vendor.vendorName)}
+                          onClick={() => setSelectedVendor(vendor.vendorName || vendor.name)}
                           className={`block w-full text-left px-3 py-2 rounded text-sm ${
-                            selectedVendor === vendor.vendorName
+                            selectedVendor === (vendor.vendorName || vendor.name)
                               ? 'bg-emerald-100 text-emerald-700'
                               : 'text-gray-600 hover:bg-gray-100'
                           }`}
                         >
-                          {vendor.vendorName} {vendor.rating && `⭐ ${vendor.rating}`}
+                          {vendor.vendorName || vendor.name} {vendor.rating && `⭐ ${vendor.rating}`}
                         </button>
                       ))}
                     </div>
