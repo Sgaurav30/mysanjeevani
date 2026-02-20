@@ -5,14 +5,35 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
+interface Product {
+  _id: number | string;
+  name: string;
+  price: number;
+  category: string;
+  brand: string;
+  rating: number;
+  reviews: number;
+  healthConcerns: string[];
+  image: string;
+  vendorName: string;
+  vendorRating: number;
+}
+
+interface Vendor {
+  _id: string;
+  name: string;
+  email: string;
+  rating?: number;
+}
+
 export default function MedicinesPage() {
-  const [products, setProducts] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedHealthConcern, setSelectedHealthConcern] = useState('');
   const [selectedVendor, setSelectedVendor] = useState('');
-  const [vendors, setVendors] = useState([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(true);
 
   const categories = [
@@ -129,7 +150,7 @@ export default function MedicinesPage() {
     setFilteredProducts(filtered);
   };
 
-  const addToCart = (product: any) => {
+  const addToCart = (product: Product) => {
     // Get existing cart from localStorage
     const existingCart = localStorage.getItem('cart');
     let cart = existingCart ? JSON.parse(existingCart) : [];
@@ -158,7 +179,7 @@ export default function MedicinesPage() {
     alert(`${product.name} added to cart!`);
   };
 
-  const addToWishlist = (product: any) => {
+  const addToWishlist = (product: Product) => {
     alert(`${product.name} added to wishlist!`);
   };
 
