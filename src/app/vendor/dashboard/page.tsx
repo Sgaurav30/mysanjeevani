@@ -54,7 +54,7 @@ export default function VendorDashboard() {
     fetchProducts(JSON.parse(info)._id);
   }, [router]);
 
-  const fetchProducts = async (vendorId) => {
+  const fetchProducts = async (vendorId: string) => {
     try {
       const response = await fetch(`/api/vendor/products?vendorId=${vendorId}`);
       if (!response.ok) throw new Error('Failed to fetch products');
