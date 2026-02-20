@@ -265,7 +265,7 @@ export default function AdminVendors() {
                       onChange={(e) => setRejectionReason(e.target.value)}
                       placeholder="Provide reason for rejection..."
                       className="w-full px-4 py-2 border border-gray-300 rounded-lg mb-3"
-                      rows="3"
+                      rows={3}
                     />
                     <div className="flex gap-2">
                       <button
