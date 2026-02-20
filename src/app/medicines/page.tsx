@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 
 interface Product {
   _id: number | string;
+  id?: number | string;
   name: string;
   price: number;
   category: string;
