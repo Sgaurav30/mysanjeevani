@@ -15,22 +15,17 @@ const productSchema = new mongoose.Schema(
     discount: Number,
     category: {
       type: String,
-      enum: [
-        'allopathy',
-        'homeopathy',
-        'ayurveda',
-        'nutrition',
-        'personal-care',
-        'baby-care',
-        'sexual-wellness',
-        'fitness',
-        'oral-care',
-        'hair-care',
-        'skin-care',
-        'herbal-teas',
-        'health-devices',
-      ],
       required: true,
+    },
+    mrp: {
+      type: Number,
+    },
+    icon: {
+      type: String,
+      default: '💊',
+    },
+    benefit: {
+      type: String,
     },
     brand: String,
     manufacturer: String,

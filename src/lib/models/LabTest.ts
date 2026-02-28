@@ -32,6 +32,10 @@ const labTestSchema = new mongoose.Schema(
     },
     reviews: Number,
     image: String,
+    icon: { type: String, default: '🧪' },
+    mrp: Number,
+    popular: { type: Boolean, default: false },
+    testsIncluded: String,
     isActive: {
       type: Boolean,
       default: true,
