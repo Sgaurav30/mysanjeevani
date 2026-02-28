@@ -1,157 +1,402 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
+interface LabTest {
+  _id: string;
+  testId: string;
+  testName: string;
+  description: string;
+  price: number;
+  mrp?: number;
+  homeCollectionAvailable: boolean;
+  reportTime: string;
+  sampleType: string;
+  fasting: boolean;
+  fastingHours?: number;
+  category: string;
+  rating: number;
+  reviews: number;
+  icon?: string;
+}
+
+interface Booking {
+  _id: string;
+  testName: string;
+  testPrice: number;
+  collectionType: string;
+  collectionDate: string;
+  collectionTime: string;
+  status: string;
+  createdAt: string;
+}
+
+interface BookingForm {
+  testId: string;
+  testName: string;
+  testPrice: number;
+  collectionType: 'home' | 'center';
+  collectionDate: string;
+  collectionTime: string;
+  address: string;
+  notes: string;
+}
+
+const CATEGORIES = ['all', 'general', 'diabetic', 'cardiac', 'thyroid', 'liver', 'kidney', 'vitamin', 'infection', 'womens-health'];
+
+const CATEGORY_LABELS: Record<string, string> = {
+  all: '🔍 All Tests', general: '🧪 General', diabetic: '🩸 Diabetes', cardiac: '❤️ Cardiac', thyroid: '🦋 Thyroid',
+  liver: '🫘 Liver', kidney: '💧 Kidney', vitamin: '☀️ Vitamins', infection: '🦠 Infection', 'womens-health': '💜 Women',
+};
+
+const TIME_SLOTS = ['7:00 AM – 9:00 AM', '9:00 AM – 11:00 AM', '11:00 AM – 1:00 PM', '2:00 PM – 4:00 PM', '4:00 PM – 6:00 PM'];
+
+const STATUS_COLORS: Record<string, string> = {
+  scheduled: 'bg-blue-100 text-blue-800',
+  completed: 'bg-green-100 text-green-800',
+  cancelled: 'bg-red-100 text-red-800',
+};
+
 export default function LabTestsPage() {
-  const [tests] = useState([
-    {
-      id: 1,
-      name: 'Full Body Checkup',
-      price: 1499,
-      homeCollection: true,
-      reportTime: '24 hours',
-      rating: 4.6,
-      reviews: 523,
-      icon: '🧪',
-    },
-    {
-      id: 2,
-      name: 'Blood Sugar Test',
-      price: 299,
-      homeCollection: true,
-      reportTime: '12 hours',
-      rating: 4.8,
-      reviews: 892,
-      icon: '🩸',
-    },
-    {
-      id: 3,
-      name: 'Thyroid Profile',
-      price: 799,
-      homeCollection: true,
-      reportTime: '24 hours',
-      rating: 4.7,
-      reviews: 412,
-      icon: '🧬',
-    },
-    {
-      id: 4,
-      name: 'Lipid Profile',
-      price: 599,
-      homeCollection: true,
-      reportTime: '24 hours',
-      rating: 4.5,
-      reviews: 634,
-      icon: '📊',
-    },
-    {
-      id: 5,
-      name: 'Liver Function Test',
-      price: 699,
-      homeCollection: true,
-      reportTime: '24 hours',
-      rating: 4.6,
-      reviews: 345,
-      icon: '🫘',
-    },
-    {
-      id: 6,
-      name: 'Kidney Function Test',
-      price: 749,
-      homeCollection: true,
-      reportTime: '24 hours',
-      rating: 4.7,
-      reviews: 289,
-      icon: '🫘',
-    },
-  ]);
+  const [activeTab, setActiveTab] = useState<'tests' | 'bookings'>('tests');
+  const [tests, setTests] = useState<LabTest[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState('all');
+  const [search, setSearch] = useState('');
+  const [bookingModal, setBookingModal] = useState<LabTest | null>(null);
+  const [bookingForm, setBookingForm] = useState<BookingForm>({ testId: '', testName: '', testPrice: 0, collectionType: 'home', collectionDate: '', collectionTime: '', address: '', notes: '' });
+  const [bookingSuccess, setBookingSuccess] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+
+  const fetchTests = useCallback(async () => {
+    try {
+      setLoading(true);
+      const q = new URLSearchParams();
+      if (category !== 'all') q.set('category', category);
+      if (search) q.set('search', search);
+      const res = await fetch(`/api/lab-tests?${q}`);
+      const data = await res.json();
+      setTests(data.tests || []);
+    } catch {}
+    finally { setLoading(false); }
+  }, [category, search]);
+
+  const fetchBookings = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('/api/lab-test-bookings', { headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      setBookings(data.bookings || []);
+    } catch {}
+  }, []);
+
+  const seedTests = async () => {
+    setSeeding(true);
+    try {
+      await fetch('/api/lab-tests/seed', { method: 'POST' });
+      await fetchTests();
+    } catch {}
+    setSeeding(false);
+  };
+
+  useEffect(() => { fetchTests(); }, [fetchTests]);
+  useEffect(() => { if (activeTab === 'bookings') fetchBookings(); }, [activeTab, fetchBookings]);
+
+  const openBooking = (test: LabTest) => {
+    setBookingForm({ testId: test._id, testName: test.testName, testPrice: test.price, collectionType: 'home', collectionDate: '', collectionTime: '', address: '', notes: '' });
+    setBookingModal(test);
+    setBookingSuccess(false);
+  };
+
+  const submitBooking = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) { alert('Please login to book a test.'); return; }
+      if (!bookingForm.collectionDate || !bookingForm.collectionTime) { alert('Please select collection date and time.'); return; }
+      if (bookingForm.collectionType === 'home' && !bookingForm.address) { alert('Please enter your address for home collection.'); return; }
+
+      const res = await fetch('/api/lab-test-bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(bookingForm),
+      });
+      if (res.ok) {
+        setBookingSuccess(true);
+        fetchBookings();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to book test');
+      }
+    } catch { alert('Error booking test. Please try again.'); }
+  };
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Header />
 
-      <div className="flex-1 py-12">
+      {/* Hero */}
+      <div className="bg-gradient-to-r from-emerald-600 to-teal-500 text-white py-10">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">
-              Book Lab Tests at Home
-            </h1>
-            <p className="text-gray-600">
-              Get tested from the comfort of your home with free sample collection
-            </p>
-          </div>
-
-          {/* Test Benefits */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-            {[
-              { icon: '🏠', title: 'Home Collection', desc: 'Free sample pickup' },
-              { icon: '⚡', title: 'Quick Reports', desc: '24-48 hours' },
-              { icon: '💯', title: 'Accurate', desc: 'ISO certified labs' },
-              { icon: '🔒', title: 'Secure', desc: 'Data privacy' },
-            ].map((benefit, i) => (
-              <div key={i} className="text-center">
-                <div className="text-4xl mb-2">{benefit.icon}</div>
-                <h3 className="font-semibold text-gray-900">{benefit.title}</h3>
-                <p className="text-sm text-gray-600">{benefit.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Tests Grid */}
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">Popular Tests</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {tests.map((test) => (
-              <div
-                key={test.id}
-                className="border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition"
-              >
-                <div className="bg-gradient-to-b from-emerald-50 to-gray-50 p-8 text-center text-5xl">
-                  {test.icon}
-                </div>
-
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">{test.name}</h3>
-
-                  {/* Report Time */}
-                  <p className="text-sm text-gray-600 mb-2">
-                    Report in {test.reportTime}
-                  </p>
-
-                  {/* Home Collection Badge */}
-                  {test.homeCollection && (
-                    <span className="inline-block bg-emerald-100 text-emerald-700 text-xs px-2 py-1 rounded mb-3">
-                      Free Home Collection
-                    </span>
-                  )}
-
-                  {/* Rating */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="flex gap-1 text-yellow-400">
-                      {'★'.repeat(Math.floor(test.rating))}
-                      {'☆'.repeat(5 - Math.floor(test.rating))}
-                    </div>
-                    <span className="text-xs text-gray-600">({test.reviews})</span>
-                  </div>
-
-                  {/* Price and Button */}
-                  <div className="flex justify-between items-center">
-                    <span className="text-2xl font-bold text-emerald-600">
-                      ₹{test.price}
-                    </span>
-                    <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1 rounded text-sm transition">
-                      Book Now
-                    </button>
-                  </div>
-                </div>
+          <h1 className="text-4xl font-extrabold mb-2">🧪 Book Lab Tests at Home</h1>
+          <p className="text-emerald-100 text-lg mb-4">Free sample collection · ISO certified labs · Reports in 24-48 hrs</p>
+          <div className="flex flex-wrap gap-4 text-sm">
+            {[['🏠', 'Free Home Collection'], ['⚡', 'Quick Reports'], ['💯', 'Accurate Results'], ['🔒', 'Secure & Private']].map(([icon, text]) => (
+              <div key={text} className="flex items-center gap-2 bg-white/20 px-3 py-1.5 rounded-full">
+                <span>{icon}</span><span>{text}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex gap-0">
+            {['tests', 'bookings'].map((tab) => (
+              <button key={tab} onClick={() => setActiveTab(tab as 'tests' | 'bookings')}
+                className={`px-6 py-4 text-sm font-semibold border-b-2 transition ${activeTab === tab ? 'border-emerald-600 text-emerald-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                {tab === 'tests' ? '🔬 Browse Tests' : '📋 My Bookings'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
+        {activeTab === 'tests' && (
+          <>
+            {/* Search */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <input type="text" placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+              <button onClick={fetchTests} className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-emerald-700 transition">Search</button>
+              {tests.length === 0 && !loading && (
+                <button onClick={seedTests} disabled={seeding}
+                  className="bg-orange-500 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-orange-600 transition disabled:opacity-60">
+                  {seeding ? 'Loading...' : '+ Load Sample Tests'}
+                </button>
+              )}
+            </div>
+
+            {/* Category pills */}
+            <div className="flex flex-wrap gap-2 mb-6">
+              {CATEGORIES.map((cat) => (
+                <button key={cat} onClick={() => setCategory(cat)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition ${category === cat ? 'bg-emerald-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-emerald-400'}`}>
+                  {CATEGORY_LABELS[cat]}
+                </button>
+              ))}
+            </div>
+
+            {loading ? (
+              <div className="text-center py-20 text-gray-400">Loading tests...</div>
+            ) : tests.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-5xl mb-4">🧪</div>
+                <p className="text-gray-500 mb-4">No tests found. Click &ldquo;Load Sample Tests&rdquo; to add tests to the database.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {tests.map((test) => (
+                  <div key={test._id} className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition">
+                    <div className="bg-gradient-to-b from-emerald-50 to-white p-6 text-center text-5xl">
+                      {test.icon || '🔬'}
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between mb-1">
+                        <h3 className="font-bold text-gray-900 text-sm leading-tight flex-1">{test.testName}</h3>
+                        {test.mrp && test.mrp > test.price && (
+                          <span className="bg-green-100 text-green-700 text-xs font-bold px-1.5 py-0.5 rounded ml-2 flex-shrink-0">
+                            {Math.round(((test.mrp - test.price) / test.mrp) * 100)}% OFF
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-gray-500 line-clamp-2 mt-1">{test.description}</p>
+                      <div className="flex flex-wrap gap-1.5 mt-2">
+                        <span className="bg-emerald-50 text-emerald-700 text-xs px-2 py-0.5 rounded-full">⏱ {test.reportTime}</span>
+                        {test.homeCollectionAvailable && <span className="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded-full">🏠 Home</span>}
+                        {test.fasting && <span className="bg-orange-50 text-orange-700 text-xs px-2 py-0.5 rounded-full">🍽 Fast {test.fastingHours}h</span>}
+                      </div>
+                      <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                        <span className="text-yellow-500">★</span>
+                        <span>{test.rating}</span>
+                        <span className="text-gray-300">({test.reviews})</span>
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <div>
+                          <span className="font-bold text-emerald-700 text-lg">₹{test.price}</span>
+                          {test.mrp && test.mrp > test.price && (
+                            <span className="text-xs text-gray-400 line-through ml-1">₹{test.mrp}</span>
+                          )}
+                        </div>
+                        <button onClick={() => openBooking(test)}
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition">
+                          Book Now
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {activeTab === 'bookings' && (
+          <>
+            {bookings.length === 0 ? (
+              <div className="text-center py-20">
+                <div className="text-5xl mb-4">📋</div>
+                <p className="text-gray-500 mb-4">No bookings yet.</p>
+                <button onClick={() => setActiveTab('tests')} className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-emerald-700">
+                  Browse Tests
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {bookings.map((b) => (
+                  <div key={b._id} className="bg-white rounded-xl border border-gray-200 p-5">
+                    <div className="flex items-start justify-between flex-wrap gap-2">
+                      <div>
+                        <h3 className="font-bold text-gray-900">{b.testName}</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">
+                          📅 {new Date(b.collectionDate).toLocaleDateString('en-IN', { dateStyle: 'medium' })} · ⏰ {b.collectionTime}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          {b.collectionType === 'home' ? '🏠 Home Collection' : '🏥 Centre Visit'} · ₹{b.testPrice}
+                        </p>
+                      </div>
+                      <span className={`text-xs font-semibold px-3 py-1 rounded-full capitalize ${STATUS_COLORS[b.status] || 'bg-gray-100 text-gray-600'}`}>
+                        {b.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Booking Modal */}
+      {bookingModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-screen overflow-y-auto">
+            <div className="bg-emerald-600 text-white p-5 rounded-t-2xl">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h2 className="text-xl font-bold">Book Test</h2>
+                  <p className="text-emerald-100 text-sm mt-0.5">{bookingModal.testName}</p>
+                </div>
+                <button onClick={() => { setBookingModal(null); setBookingSuccess(false); }} className="text-white/80 hover:text-white text-2xl leading-none">×</button>
+              </div>
+            </div>
+            <div className="p-5">
+              {bookingSuccess ? (
+                <div className="text-center py-8">
+                  <div className="text-6xl mb-4">✅</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Booking Confirmed!</h3>
+                  <p className="text-gray-500 text-sm mb-2">Your test has been booked successfully.</p>
+                  <p className="text-gray-500 text-sm mb-6">Our team will contact you to confirm the appointment.</p>
+                  <button onClick={() => { setBookingModal(null); setBookingSuccess(false); setActiveTab('bookings'); }}
+                    className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-emerald-700">
+                    View My Bookings
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Test info */}
+                  <div className="bg-emerald-50 rounded-lg p-3 flex justify-between">
+                    <span className="text-sm text-gray-700 font-medium">{bookingModal.testName}</span>
+                    <span className="font-bold text-emerald-700">₹{bookingModal.price}</span>
+                  </div>
+
+                  {/* Collection type */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Collection Type</label>
+                    <div className="flex gap-3">
+                      {(['home', 'center'] as const).map((type) => (
+                        <label key={type} className={`flex-1 flex items-center gap-2 border-2 rounded-lg p-3 cursor-pointer transition ${bookingForm.collectionType === type ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200'}`}>
+                          <input type="radio" name="collectionType" value={type} checked={bookingForm.collectionType === type}
+                            onChange={(e) => setBookingForm({ ...bookingForm, collectionType: e.target.value as 'home' | 'center' })} className="sr-only" />
+                          <span>{type === 'home' ? '🏠 Home Collection' : '🏥 Visit Centre'}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Date */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Collection Date <span className="text-red-500">*</span></label>
+                    <input type="date" min={todayStr} value={bookingForm.collectionDate}
+                      onChange={(e) => setBookingForm({ ...bookingForm, collectionDate: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  </div>
+
+                  {/* Time slot */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Preferred Time <span className="text-red-500">*</span></label>
+                    <div className="space-y-2">
+                      {TIME_SLOTS.map((slot) => (
+                        <label key={slot} className={`flex items-center gap-3 border-2 rounded-lg px-3 py-2 cursor-pointer transition ${bookingForm.collectionTime === slot ? 'border-emerald-500 bg-emerald-50' : 'border-gray-200 hover:border-gray-300'}`}>
+                          <input type="radio" name="time" value={slot} checked={bookingForm.collectionTime === slot}
+                            onChange={(e) => setBookingForm({ ...bookingForm, collectionTime: e.target.value })} className="sr-only" />
+                          <span className="text-sm">⏰ {slot}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Address (home only) */}
+                  {bookingForm.collectionType === 'home' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-1">Full Address <span className="text-red-500">*</span></label>
+                      <textarea rows={3} placeholder="Flat/House No., Street, City, Pincode"
+                        value={bookingForm.address} onChange={(e) => setBookingForm({ ...bookingForm, address: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                    </div>
+                  )}
+
+                  {/* Fasting reminder */}
+                  {bookingModal.fasting && (
+                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-sm text-orange-800">
+                      ⚠️ This test requires <strong>{bookingModal.fastingHours} hours fasting</strong> before sample collection.
+                    </div>
+                  )}
+
+                  {/* Notes */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-1">Notes (optional)</label>
+                    <input type="text" placeholder="Any special instructions..."
+                      value={bookingForm.notes} onChange={(e) => setBookingForm({ ...bookingForm, notes: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-400" />
+                  </div>
+
+                  {/* Submit */}
+                  <div className="flex gap-3 pt-2">
+                    <button onClick={() => setBookingModal(null)} className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-lg font-semibold hover:bg-gray-50">
+                      Cancel
+                    </button>
+                    <button onClick={submitBooking} className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-semibold transition">
+                      Confirm Booking
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <Footer />
     </div>
   );
 }
+

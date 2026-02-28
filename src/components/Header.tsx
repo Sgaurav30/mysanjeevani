@@ -262,39 +262,31 @@ export default function Header() {
             </button>
           </div>
 
-          {/* Category Navigation - Like 1mg */}
-          <div className="hidden md:flex gap-8 mt-4 text-sm text-gray-700 border-t border-gray-100 pt-4">
-            <Link href="/medicines" className="hover:text-emerald-600 font-medium">
-              Medicines
-            </Link>
-            <Link href="/doctor-consultation" className="hover:text-emerald-600 font-medium">
-              Doctor Consultation
-            </Link>
-            <Link href="/lab-tests" className="hover:text-emerald-600 font-medium">
-              Lab Tests
-            </Link>
-            <Link href="/health-blog" className="hover:text-emerald-600 font-medium">
-              Health Blog
-            </Link>
-            <Link href="/wellness" className="hover:text-emerald-600 font-medium">
-              Wellness
-            </Link>
+          {/* Category Navigation */}
+          <div className="hidden md:flex gap-6 mt-4 text-sm text-gray-700 border-t border-gray-100 pt-3 flex-wrap">
+            <Link href="/medicines" className="hover:text-emerald-600 font-medium transition">💊 Medicines</Link>
+            <Link href="/doctor-consultation" className="hover:text-emerald-600 font-medium transition">👨‍⚕️ Consult Doctor</Link>
+            <Link href="/lab-tests" className="hover:text-emerald-600 font-medium transition">🧪 Lab Tests</Link>
+            <Link href="/ayurveda" className="hover:text-amber-600 font-medium transition text-amber-700">🌿 Ayurveda</Link>
+            <Link href="/homeopathy" className="hover:text-pink-600 font-medium transition text-pink-700">🌸 Homeopathy</Link>
+            <Link href="/wellness" className="hover:text-emerald-600 font-medium transition">🏃 Wellness</Link>
+            <Link href="/health-blog" className="hover:text-emerald-600 font-medium transition">📰 Health Blog</Link>
+            <Link href="/offers" className="hover:text-orange-600 font-medium transition text-orange-600">🎁 Offers</Link>
           </div>
         </div>
       </div>
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-3">
-          <Link href="/medicines" className="block text-gray-700 hover:text-emerald-600">
-            Medicines
-          </Link>
-          <Link href="/health-products" className="block text-gray-700 hover:text-emerald-600">
-            Health Products
-          </Link>
-          <Link href="/diagnostics" className="block text-gray-700 hover:text-emerald-600">
-            Diagnostics
-          </Link>
+        <div className="md:hidden bg-white border-t border-gray-100 p-4 space-y-2">
+          <Link href="/medicines" className="flex items-center gap-2 py-2 text-gray-700 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>💊 Medicines</Link>
+          <Link href="/doctor-consultation" className="flex items-center gap-2 py-2 text-gray-700 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>👨‍⚕️ Consult Doctor</Link>
+          <Link href="/lab-tests" className="flex items-center gap-2 py-2 text-gray-700 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>🧪 Lab Tests</Link>
+          <Link href="/ayurveda" className="flex items-center gap-2 py-2 text-amber-700 hover:text-amber-600" onClick={() => setIsMenuOpen(false)}>🌿 Ayurveda</Link>
+          <Link href="/homeopathy" className="flex items-center gap-2 py-2 text-pink-700 hover:text-pink-600" onClick={() => setIsMenuOpen(false)}>🌸 Homeopathy</Link>
+          <Link href="/wellness" className="flex items-center gap-2 py-2 text-gray-700 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>🏃 Wellness</Link>
+          <Link href="/health-blog" className="flex items-center gap-2 py-2 text-gray-700 hover:text-emerald-600" onClick={() => setIsMenuOpen(false)}>📰 Health Blog</Link>
+          <Link href="/offers" className="flex items-center gap-2 py-2 text-orange-600 hover:text-orange-700" onClick={() => setIsMenuOpen(false)}>🎁 Offers</Link>
           <div className="border-t border-gray-100 pt-3"></div>
           <Link href="/login" className="block w-full text-center bg-emerald-600 text-white py-2 rounded-lg hover:bg-emerald-700">
             Login

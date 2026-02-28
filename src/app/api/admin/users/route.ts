@@ -1,31 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { connectDB } from '@/lib/db';
+import { User } from '@/lib/models/User';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get('status');
+    const search = searchParams.get('search') || '';
 
-    // This would typically fetch from your database
-    // For now, returning mock structure
-    const users = [
-      {
-        _id: '1',
-        fullName: 'John Doe',
-        email: 'john@example.com',
-        phone: '9876543210',
-        status: 'active',
-        joinedDate: '2024-01-15',
-        role: 'user',
-      },
-    ];
+    await connectDB();
 
-    const filteredUsers = status ? users.filter(u => u.status === status) : users;
+    const query: any = {};
+    if (search) {
+      query.$or = [
+        { fullName: { $regex: search, $options: 'i' } },
+        { email: { $regex: search, $options: 'i' } },
+      ];
+    }
 
-    return NextResponse.json({ users: filteredUsers, total: filteredUsers.length });
-  } catch (error) {
+    const users = await User.find(query)
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .lean();
+
+    return NextResponse.json({ users, total: users.length });
+  } catch (error: any) {
     console.error('Error fetching users:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch users' },
+      { error: 'Failed to fetch users', details: error.message },
       { status: 500 }
     );
   }
@@ -96,7 +97,9 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // This would typically delete user from database
+    await connectDB();
+    await User.findByIdAndDelete(userId);
+
     return NextResponse.json({ message: 'User deleted successfully' });
   } catch (error) {
     console.error('Error deleting user:', error);

@@ -7,34 +7,46 @@ export default function AdminUsers() {
   const [users, setUsers] = useState<any[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetchUsers();
   }, []);
 
-  const fetchUsers = () => {
+  const fetchUsers = async (search = '') => {
     try {
-      const usersStr = localStorage.getItem('users') || '[]';
-      const usersList = JSON.parse(usersStr);
-      setUsers(usersList);
-    } catch (error) {
-      console.error('Error fetching users:', error);
+      setLoading(true);
+      setError('');
+      const res = await fetch(`/api/admin/users${search ? `?search=${search}` : ''}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.details || 'Failed to fetch users');
+      setUsers(data.users || []);
+    } catch (err: any) {
+      console.error('Error fetching users:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const deleteUser = (userId: string) => {
+  const deleteUser = async (userId: string) => {
     if (confirm('Are you sure you want to delete this user?')) {
-      const updatedUsers = users.filter(u => u.id !== userId);
-      localStorage.setItem('users', JSON.stringify(updatedUsers));
-      setUsers(updatedUsers);
+      try {
+        const res = await fetch(`/api/admin/users?id=${userId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Failed to delete user');
+        setUsers(users.filter(u => u._id !== userId));
+      } catch (err) {
+        alert('Failed to delete user');
+      }
     }
   };
 
-  const filteredUsers = users.filter(user =>
-    user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const handleSearch = (value: string) => {
+    setSearchTerm(value);
+    fetchUsers(value);
+  };
+
+  const filteredUsers = users;
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
@@ -61,7 +73,7 @@ export default function AdminUsers() {
             type="text"
             placeholder="Search users by name or email..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -74,6 +86,7 @@ export default function AdminUsers() {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Email</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Phone</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Joined</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
@@ -81,13 +94,13 @@ export default function AdminUsers() {
             <tbody className="divide-y divide-gray-200">
               {filteredUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    No users found
+                  <td colSpan={6} className="px-6 py-4 text-center text-gray-500">
+                    {error ? `Error: ${error}` : 'No users found'}
                   </td>
                 </tr>
               ) : (
                 filteredUsers.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
+                  <tr key={user._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                       {user.fullName || 'N/A'}
                     </td>
@@ -98,11 +111,18 @@ export default function AdminUsers() {
                       {user.phone || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        user.role === 'admin' ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'
+                      }`}>
+                        {user.role || 'user'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                       {new Date(user.createdAt || Date.now()).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <button
-                        onClick={() => deleteUser(user.id)}
+                        onClick={() => deleteUser(user._id)}
                         className="text-red-600 hover:text-red-800 font-medium"
                       >
                         Delete

@@ -6,39 +6,18 @@ if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable');
 }
 
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+interface MongooseCache {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
 }
 
-function createConnectionPromise() {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error('MongoDB connection timeout after 10 seconds'));
-    }, 10000);
-
-    const opts = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
-      socketTimeoutMS: 5000,
-      family: 4,
-    };
-
-    mongoose
-      .connect(MONGODB_URI as string, opts)
-      .then((mongoose) => {
-        clearTimeout(timeoutId);
-        console.log('✅ MongoDB Connected');
-        resolve(mongoose);
-      })
-      .catch((error) => {
-        clearTimeout(timeoutId);
-        console.error('❌ MongoDB Connection Error:', error.message);
-        reject(error);
-      });
-  });
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined;
 }
+
+const cached: MongooseCache = global.mongoose ?? { conn: null, promise: null };
+global.mongoose = cached;
 
 export async function connectDB() {
   if (cached.conn) {
@@ -46,7 +25,23 @@ export async function connectDB() {
   }
 
   if (!cached.promise) {
-    cached.promise = createConnectionPromise();
+    const opts = {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      family: 4,
+    };
+
+    cached.promise = mongoose
+      .connect(MONGODB_URI as string, opts)
+      .then((m) => {
+        console.log('✅ MongoDB Connected');
+        return m;
+      })
+      .catch((error) => {
+        console.error('❌ MongoDB Connection Error:', error.message);
+        cached.promise = null;
+        throw error;
+      });
   }
 
   try {
