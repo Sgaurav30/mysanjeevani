@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const vendorId = searchParams.get('vendorId');
 
     // This would typically fetch from your database
-    const products = [];
+    const products: Array<{ category?: string; vendorId?: string }> = [];
 
     let filtered = [...products];
     if (category) filtered = filtered.filter(p => p.category === category);
