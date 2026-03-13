@@ -13,6 +13,7 @@ export default function SignupPage() {
     fullName: '',
     email: '',
     phone: '',
+    role: 'user',
     password: '',
     confirmPassword: '',
   });
@@ -50,6 +51,7 @@ export default function SignupPage() {
           fullName: formData.fullName,
           email: formData.email,
           phone: formData.phone,
+          role: formData.role,
           password: formData.password,
         }),
       });
@@ -113,6 +115,28 @@ export default function SignupPage() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
                   placeholder="John Doe"
                 />
+              </div>
+
+              {/* Email Field */}
+              <div>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Register As
+                </label>
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                >
+                  <option value="user">User</option>
+                  <option value="vendor">Vendor</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="admin">Admin</option>
+                </select>
               </div>
 
               {/* Email Field */}

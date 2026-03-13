@@ -11,7 +11,18 @@ export async function POST(request: NextRequest) {
 
     try {
       const body = await request.json();
-      const { email, password, fullName, phone } = body;
+      const { email, password, fullName, phone, role } = body;
+
+      const requestedRole = role || 'user';
+      const allowedRoles = ['user', 'vendor', 'doctor', 'admin'];
+
+      if (!allowedRoles.includes(requestedRole)) {
+        clearTimeout(timeoutId);
+        return NextResponse.json(
+          { error: 'Invalid role selected' },
+          { status: 400 }
+        );
+      }
 
       // Validation
       if (!email || !password || !fullName) {
@@ -66,7 +77,7 @@ export async function POST(request: NextRequest) {
         email,
         phone: phone || '',
         password: hashedPassword,
-        role: 'user',
+        role: requestedRole,
         isVerified: false,
       });
 

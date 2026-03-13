@@ -21,6 +21,14 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/doctors - add a new doctor
 export async function POST(request: NextRequest) {
   try {
+    const actorRole = request.headers.get('x-user-role');
+    if (actorRole !== 'admin' && actorRole !== 'doctor') {
+      return NextResponse.json(
+        { error: 'Only admin or doctor can add doctor details' },
+        { status: 403 }
+      );
+    }
+
     await connectDB();
     const body = await request.json();
     const {

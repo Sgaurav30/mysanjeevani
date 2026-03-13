@@ -180,9 +180,6 @@ export default function Footer() {
             <p className="text-gray-400 text-sm">
               © 2026 MySanjeevani. All rights reserved.
             </p>
-            <p className="text-gray-400 text-sm mt-4 md:mt-0">
-              This website is for informational purposes only and should not be used as a substitute for professional medical advice.
-            </p>
           </div>
         </div>
       </div>

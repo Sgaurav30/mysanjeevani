@@ -54,7 +54,3 @@ export async function connectDB() {
 
   return cached.conn;
 }
-
-declare global {
-  var mongoose: any;
-}

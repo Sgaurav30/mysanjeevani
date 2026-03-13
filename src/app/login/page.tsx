@@ -11,6 +11,7 @@ import Footer from '@/components/Footer';
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -24,7 +25,7 @@ export default function LoginPage() {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, role }),
       });
 
       const data = await response.json();
@@ -37,6 +38,31 @@ export default function LoginPage() {
       // Store token and user info
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
+
+      if (data.user?.role === 'vendor') {
+        localStorage.setItem('vendorToken', data.token);
+        localStorage.setItem(
+          'vendorInfo',
+          JSON.stringify({
+            _id: data.user.id,
+            vendorName: data.user.fullName,
+            email: data.user.email,
+            status: data.user.vendorStatus || 'pending',
+          })
+        );
+        router.push('/vendor/dashboard');
+        return;
+      }
+
+      if (data.user?.role === 'admin') {
+        router.push('/admin');
+        return;
+      }
+
+      if (data.user?.role === 'doctor') {
+        router.push('/admin/consultations');
+        return;
+      }
 
       // Redirect to home or dashboard
       router.push('/');
@@ -68,6 +94,27 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email Field */}
+              <div>
+                <label
+                  htmlFor="role"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Login As
+                </label>
+                <select
+                  id="role"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition"
+                >
+                  <option value="user">User</option>
+                  <option value="vendor">Vendor</option>
+                  <option value="doctor">Doctor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
               {/* Email Field */}
               <div>
                 <label

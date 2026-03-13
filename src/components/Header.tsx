@@ -190,7 +190,7 @@ export default function Header() {
                         >
                           🏠 Addresses
                         </Link>
-                        {user.email === 'admin@mysanjeevani.com' && (
+                        {user.role === 'admin' && (
                           <>
                             <div className="border-t border-gray-100 my-2"></div>
                             <Link
@@ -199,6 +199,30 @@ export default function Header() {
                               onClick={() => setIsUserMenuOpen(false)}
                             >
                               ⚙️ Admin Panel
+                            </Link>
+                          </>
+                        )}
+                        {user.role === 'doctor' && (
+                          <>
+                            <div className="border-t border-gray-100 my-2"></div>
+                            <Link
+                              href="/admin/consultations"
+                              className="block px-4 py-2 text-emerald-600 hover:bg-emerald-50 font-medium"
+                              onClick={() => setIsUserMenuOpen(false)}
+                            >
+                              👨‍⚕️ Doctor Panel
+                            </Link>
+                          </>
+                        )}
+                        {user.role === 'vendor' && (
+                          <>
+                            <div className="border-t border-gray-100 my-2"></div>
+                            <Link
+                              href="/vendor/dashboard"
+                              className="block px-4 py-2 text-emerald-600 hover:bg-emerald-50 font-medium"
+                              onClick={() => setIsUserMenuOpen(false)}
+                            >
+                              🏪 Vendor Dashboard
                             </Link>
                           </>
                         )}

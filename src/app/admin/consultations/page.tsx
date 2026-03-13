@@ -165,11 +165,18 @@ export default function AdminConsultations() {
     }
     setDocSubmitting(true); setDocError('');
     try {
+      const currentUserRaw = localStorage.getItem('user');
+      const currentUser = currentUserRaw ? JSON.parse(currentUserRaw) : null;
+      const currentRole = currentUser?.role || 'user';
+
       const url = editingDoctor ? `/api/admin/doctors/${editingDoctor._id}` : '/api/admin/doctors';
       const method = editingDoctor ? 'PUT' : 'POST';
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-role': currentRole,
+        },
         body: JSON.stringify(docForm),
       });
       const data = await res.json();
